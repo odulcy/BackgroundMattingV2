@@ -46,6 +46,9 @@ parser.add_argument('--model-refine-threshold', type=float, default=0.7)
 
 parser.add_argument('--hide-fps', action='store_true')
 parser.add_argument('--resolution', type=int, nargs=2, metavar=('width', 'height'), default=(1280, 720))
+parser.add_argument('--camera-device', type=int, default=0)
+parser.add_argument('--background-color', type=float, nargs=3, metavar=('red', 'green', 'blue'), default=(0,1,0))
+
 args = parser.parse_args()
 
 
@@ -139,8 +142,10 @@ model.load_state_dict(torch.load(args.model_checkpoint), strict=False)
 
 
 width, height = args.resolution
-cam = Camera(width=width, height=height)
+cam = Camera(device_id=args.camera_device, width=width, height=height)
 dsp = Displayer('MattingV2', cam.width, cam.height, show_info=(not args.hide_fps))
+
+r,g,b = args.background_color
 
 def cv2_frame_to_cuda(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -149,11 +154,16 @@ def cv2_frame_to_cuda(frame):
 with torch.no_grad():
     while True:
         bgr = None
+        colored_bgr = None
         while True: # grab bgr
             frame = cam.read()
             key = dsp.step(frame)
             if key == ord('b'):
                 bgr = cv2_frame_to_cuda(cam.read())
+                colored_bgr = torch.zeros_like(bgr).cuda()
+                colored_bgr[:,0,:,:] = r
+                colored_bgr[:,1,:,:] = g
+                colored_bgr[:,2,:,:] = b
                 break
             elif key == ord('q'):
                 exit()
@@ -161,8 +171,8 @@ with torch.no_grad():
             frame = cam.read()
             src = cv2_frame_to_cuda(frame)
             pha, fgr = model(src, bgr)[:2]
-            res = pha * fgr + (1 - pha) * torch.ones_like(fgr)
-            res = res.mul(255).byte().cpu().permute(0, 2, 3, 1).numpy()[0]
+            res = pha * fgr + (1 - pha) * colored_bgr
+            res = res.mul(255).byte().permute(0, 2, 3, 1).cpu().numpy()[0]
             res = cv2.cvtColor(res, cv2.COLOR_RGB2BGR)
             key = dsp.step(res)
             if key == ord('b'):
