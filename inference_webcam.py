@@ -165,6 +165,8 @@ with torch.no_grad():
                 colored_bgr[:,1,:,:] = g
                 colored_bgr[:,2,:,:] = b
                 break
+            if key == ord('f'):
+                dsp.show_info = not dsp.show_info
             elif key == ord('q'):
                 exit()
         while True: # matting
@@ -177,5 +179,7 @@ with torch.no_grad():
             key = dsp.step(res)
             if key == ord('b'):
                 break
+            if key == ord('f'):
+                dsp.show_info = not dsp.show_info
             elif key == ord('q'):
                 exit()
