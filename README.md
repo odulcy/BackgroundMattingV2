@@ -1,6 +1,6 @@
 # Real-Time High-Resolution Background Matting
 
-Fork of the repository [Real-Time High-Resolution Background Matting](https://github.com/PeterL1n/BackgroundMattingV2). [You can check their paper here.](https://arxiv.org/abs/2012.07810).
+Fork from the repository [Real-Time High-Resolution Background Matting](https://github.com/PeterL1n/BackgroundMattingV2). [You can check their paper here](https://arxiv.org/abs/2012.07810).
 
 ## Download
 
