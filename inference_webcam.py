@@ -48,6 +48,7 @@ parser.add_argument('--hide-fps', action='store_true')
 parser.add_argument('--resolution', type=int, nargs=2, metavar=('width', 'height'), default=(1280, 720))
 parser.add_argument('--camera-device', type=int, default=0)
 parser.add_argument('--background-color', type=float, nargs=3, metavar=('red', 'green', 'blue'), default=(0,1,0))
+parser.add_argument('--crop-width', type=float, default=1.0)
 
 args = parser.parse_args()
 
@@ -115,10 +116,11 @@ class Displayer:
             cv2.resizeWindow(self.title, width, height)
     # Update the currently showing frame and return key press char code
     def step(self, image):
-        fps_estimate = self.fps_tracker.tick()
-        if self.show_info and fps_estimate is not None:
-            message = f"{int(fps_estimate)} fps | {self.width}x{self.height}"
-            cv2.putText(image, message, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0))
+        if self.show_info:
+            fps_estimate = self.fps_tracker.tick()
+            if fps_estimate is not None:
+                message = f"{int(fps_estimate)} fps | {self.width}x{self.height}"
+                cv2.putText(image, message, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0))
         cv2.imshow(self.title, image)
         return cv2.waitKey(1) & 0xFF
 
@@ -140,16 +142,22 @@ if args.model_type == 'mattingrefine':
 model = model.cuda().eval()
 model.load_state_dict(torch.load(args.model_checkpoint), strict=False)
 
-
+r,g,b = args.background_color
 width, height = args.resolution
 cam = Camera(device_id=args.camera_device, width=width, height=height)
-dsp = Displayer('MattingV2', cam.width, cam.height, show_info=(not args.hide_fps))
 
-r,g,b = args.background_color
+crop_width = args.crop_width
+middle = int(cam.width // 2)
+crop_start = middle - int((cam.width * crop_width)//2)
+crop_end = middle + int((cam.width * crop_width)//2)
+
+dsp = Displayer('MattingV2', int(cam.width * crop_width), cam.height, show_info=(not args.hide_fps))
+
+
 
 def cv2_frame_to_cuda(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    return ToTensor()(Image.fromarray(frame)).unsqueeze_(0).cuda()
+    return ToTensor()(Image.fromarray(frame[:,crop_start:crop_end,:])).unsqueeze_(0).cuda()
 
 with torch.no_grad():
     while True:
@@ -157,7 +165,7 @@ with torch.no_grad():
         colored_bgr = None
         while True: # grab bgr
             frame = cam.read()
-            key = dsp.step(frame)
+            key = dsp.step(frame[:,crop_start:crop_end,:])
             if key == ord('b'):
                 bgr = cv2_frame_to_cuda(cam.read())
                 colored_bgr = torch.zeros_like(bgr).cuda()
