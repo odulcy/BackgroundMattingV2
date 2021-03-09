@@ -45,7 +45,6 @@ parser.add_argument('--model-refine-sample-pixels', type=int, default=80_000)
 parser.add_argument('--model-refine-threshold', type=float, default=0.7)
 
 parser.add_argument('--background-color', type=float, nargs=3, metavar=('red', 'green', 'blue'), default=(0,1,0))
-parser.add_argument('--crop-width', type=float, default=1.0)
 
 args = parser.parse_args()
 
