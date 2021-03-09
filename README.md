@@ -17,6 +17,27 @@ An example of how to use this script is provided in `run.sh`.
 
 &nbsp;
 
+#### Compute remotely matting
+
+I added a proof of concept to offload matting on another computer using the Bidirectional Mode from [vidgear](https://github.com/abhiTronix/vidgear). You can see [more here](https://abhitronix.github.io/vidgear/latest/gears/netgear/advanced/bidirectional_mode/#using-bidirectional-mode-for-video-frames-transfer).
+
+A *Compute Node* is a computer with a GPU and a Client is a computer with a webcam.
+The computer node process the image coming from the webcam and send it back to this computer.
+
+You need to adjust IP address in the ``compute_node.py`` and ``client.py``.
+
+**Server part :**
+```bash
+python compute_node.py --model-backbone-scale 0.25 --model-type mattingrefine --model-backbone resnet50 --model-checkpoint pytorch_resnet50.pth
+```
+
+**Client part :**
+```bash
+python client.py
+```
+
+&nbsp;
+
 ## Acknowledgements
 * [Shanchuan Lin](https://www.linkedin.com/in/shanchuanlin/)*, University of Washington
 * [Andrey Ryabtsev](http://andreyryabtsev.com/)*, University of Washington
