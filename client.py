@@ -57,7 +57,7 @@ client = NetGear(
     address="192.168.0.28",
     port="5454",
     protocol="tcp",
-    pattern=1,
+    pattern=0,
     logging=True,
     **options
 )
@@ -80,6 +80,7 @@ while True:
             # check for 'q' key if pressed
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
+                client.send(frame[:,crop_start:crop_end,:], message=key)
                 break
 
     except KeyboardInterrupt:

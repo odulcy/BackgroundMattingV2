@@ -52,20 +52,8 @@ args = parser.parse_args()
 # ----------- Utility classes -------------
 
 class Compute:
-    def __init__(self):
-        # define tweak flags
-        #options = {"flag": 0, "copy": False, "track": False, "bidirectional_mode": True}
-        options = {"bidirectional_mode": True}
-
-        self.compute = NetGear(
-            address="192.168.0.28",
-            port="5454",
-            protocol="tcp",
-            pattern=1,
-            receive_mode=True,
-            logging=True,
-            **options
-        )
+    def __init__(self, **kwargs):
+        self.compute = NetGear(**kwargs)
 
     def read(self, processed_frame=None):
         """Read data from client and send back a processed frame
@@ -79,6 +67,10 @@ class Compute:
         """
         data = self.compute.recv(return_data=processed_frame)
         return data
+
+    def close(self):
+        """Safely terminates the threads, and NetGear resources."""
+        self.compute.close()
 
 
 # --------------- Main ---------------
@@ -100,8 +92,17 @@ model.load_state_dict(torch.load(args.model_checkpoint), strict=False)
 
 r,g,b = args.background_color
 
-compute_node = Compute()
-
+compute_node = Compute(
+    address="192.168.0.28",
+    port="5454",
+    protocol="tcp",
+    pattern=0,
+    receive_mode=True,
+    logging=True,
+    secure_mode=0,
+    bidirectional_mode=True,
+    THREADED_QUEUE_MODE=False
+)
 def cv2_frame_to_cuda(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     return ToTensor()(Image.fromarray(frame)).unsqueeze_(0).cuda()
@@ -124,6 +125,9 @@ with torch.no_grad():
                 colored_bgr[:,1,:,:] = g
                 colored_bgr[:,2,:,:] = b
                 break
+            if key == ord('q'):
+                compute_node.close()
+                exit()
         # Matting
         while True:
             # Return processed frame and get a new frame
@@ -139,3 +143,6 @@ with torch.no_grad():
             frame = res
             if key == ord('b'):
                 break
+            if key == ord('q'):
+                compute_node.close()
+                exit()
