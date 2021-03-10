@@ -68,11 +68,7 @@ while True:
 
     try:
         # read frames from stream
-        (grabbed, frame) = cam.read()
-
-        # check for frame if not grabbed
-        if not grabbed:
-            break
+        frame = cam.read()
 
         # send frame to compute_node
         processed_frame = client.send(frame[:,crop_start:crop_end,:], message=key)
