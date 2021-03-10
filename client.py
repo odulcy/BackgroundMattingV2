@@ -6,6 +6,7 @@ from vidgear.gears import NetGear
 
 parser = argparse.ArgumentParser(description='Inference from web-cam')
 
+parser.add_argument('--ip', type=str, default="127.0.0.1")
 parser.add_argument('--resolution', type=int, nargs=2, metavar=('width', 'height'), default=(1280, 720))
 parser.add_argument('--camera-device', type=int, default=0)
 parser.add_argument('--crop-width', type=float, default=1.0)
@@ -54,7 +55,7 @@ crop_end = middle + int((cam.width * crop_width)//2)
 options = {"bidirectional_mode" : True}
 
 client = NetGear(
-    address="192.168.0.28",
+    address=args.ip,
     port="5454",
     protocol="tcp",
     pattern=0,

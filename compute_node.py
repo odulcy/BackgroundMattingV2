@@ -15,20 +15,13 @@ Example:
 
 """
 
-import argparse, os, shutil, time
+import argparse, shutil, time
 import cv2
 import torch
 
-from torch import nn
-from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, ToTensor, Resize
-from torchvision.transforms.functional import to_pil_image
-from threading import Thread, Lock
-from tqdm import tqdm
 from PIL import Image
 from vidgear.gears import NetGear
 
-from dataset import VideoDataset
 from model import MattingBase, MattingRefine
 
 # --------------- Arguments ---------------
@@ -87,13 +80,15 @@ if args.model_type == 'mattingrefine':
         args.model_refine_sample_pixels,
         args.model_refine_threshold)
 
+#torch.cuda.set_device(2)
+
 model = model.cuda().eval()
 model.load_state_dict(torch.load(args.model_checkpoint), strict=False)
 
 r,g,b = args.background_color
 
 compute_node = Compute(
-    address="192.168.0.28",
+    address="127.0.0.1",
     port="5454",
     protocol="tcp",
     pattern=0,
@@ -101,11 +96,14 @@ compute_node = Compute(
     logging=True,
     secure_mode=0,
     bidirectional_mode=True,
-    THREADED_QUEUE_MODE=False
+    THREADED_QUEUE_MODE=True
 )
+
 def cv2_frame_to_cuda(frame):
+    """Frame as float64"""
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    return ToTensor()(Image.fromarray(frame)).unsqueeze_(0).cuda()
+    img = torch.from_numpy(frame)
+    return img.cuda().div(255).permute((2, 0, 1)).unsqueeze_(0)
 
 frame = None
 with torch.no_grad():
@@ -132,8 +130,6 @@ with torch.no_grad():
         while True:
             # Return processed frame and get a new frame
             data = compute_node.read(processed_frame=frame)
-            if data is None:
-                break
             key, frame = data
             src = cv2_frame_to_cuda(frame)
             pha, fgr = model(src, bgr)[:2]
